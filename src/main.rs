@@ -1,10 +1,13 @@
 mod camera;
 mod linalg;
+mod model;
+mod texture;
+mod triangle;
 mod utils;
 
 use camera::Camera;
 use image::RgbImage;
-use linalg::{Matrix2, Vector2, Vector3};
+use linalg::{Vector2, Vector3};
 use std::f32::consts::PI;
 use utils::filter;
 
