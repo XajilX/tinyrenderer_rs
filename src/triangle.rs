@@ -5,6 +5,7 @@ use crate::{
     texture::Texture,
 };
 
+#[derive(Debug)]
 pub struct Triangle {
     pub v: [Vector3; 3],
     pub n: [Vector3; 3],

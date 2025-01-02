@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::utils::EPS;
 
@@ -10,6 +10,18 @@ pub struct Vector<const T: usize> {
 pub type Vector2 = Vector<2>;
 pub type Vector3 = Vector<3>;
 pub type Vector4 = Vector<4>;
+
+impl<const T: usize> Neg for Vector<T> {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        let mut res = Vector::<T> { v: [0f32; T] };
+        for i in 0..T {
+            res.v[i] = -self.v[i];
+        }
+        res
+    }
+}
 
 impl<const T: usize> Add for Vector<T> {
     type Output = Self;
@@ -127,6 +139,10 @@ impl<const T: usize> Vector<T> {
 impl Vector2 {
     pub fn new(x: f32, y: f32) -> Self {
         Self { v: [x, y] }
+    }
+
+    pub fn cross(&self, other: Self) -> f32 {
+        self.v[0] * other.v[1] - self.v[1] * other.v[0]
     }
 }
 

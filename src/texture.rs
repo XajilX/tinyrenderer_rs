@@ -1,5 +1,6 @@
 use image::{ImageResult, RgbImage};
 
+#[derive(Debug)]
 pub struct Texture {
     img: RgbImage,
 }
@@ -21,9 +22,9 @@ impl Texture {
 
     pub fn at_uv(&self, u: f32, v: f32) -> [u8; 3] {
         let (w, h) = self.img.dimensions();
-        let (x, y) = (u * w as f32, v * h as f32);
+        let (x, y) = (u * (w - 1) as f32, (1. - v) * (h - 1) as f32);
         let (xf, yf) = (x.floor(), y.floor());
-        let (x1, y1) = (xf.max(0.), yf.max(0.));
+        let (x1, y1) = (xf.min(w as f32 - 1.).max(0.), yf.min(h as f32 - 1.).max(0.));
         let (x2, y2) = ((x1 + 1.).min(w as f32 - 1.), (y1 + 1.).min(h as f32 - 1.));
         let (s, t) = (x - xf, y - yf);
         let px1 = self.img.get_pixel(x1 as u32, y1 as u32).0;

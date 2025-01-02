@@ -1,12 +1,15 @@
 use crate::linalg::{Matrix4, Vector3};
 use crate::utils::EPS;
 
+const ZNR: f32 = 0.01;
+const ZFR: f32 = 500.;
+
 pub struct Camera {
-    pos: Vector3,
-    dir: Vector3,
-    up: Vector3,
-    fov_y: f32,
-    aspect: f32,
+    pub pos: Vector3,
+    pub dir: Vector3,
+    pub up: Vector3,
+    pub fov_y: f32,
+    pub aspect: f32,
 }
 
 impl Camera {
@@ -21,6 +24,7 @@ impl Camera {
         }
     }
     pub fn camera_transform(&self) -> Matrix4 {
+        assert!(self.dir.dot(self.up).abs() < EPS);
         let v = self.dir.cross(self.up);
         let (kv, ku, kd) = (
             self.pos.dot(v),
@@ -31,37 +35,25 @@ impl Camera {
             v: [
                 [v.v[0], v.v[1], v.v[2], -kv],
                 [self.up.v[0], self.up.v[1], self.up.v[2], -ku],
-                [-self.dir.v[0], -self.dir.v[1], -self.dir.v[2], -kd],
+                [-self.dir.v[0], -self.dir.v[1], -self.dir.v[2], kd],
                 [0., 0., 0., 1.],
             ],
         }
     }
-    pub fn perspective_transform(&self, zmin: f32, zmax: f32) -> Matrix4 {
-        assert!(zmin < zmax);
-        assert!(zmin > 0.);
-        let u = zmin * (self.fov_y / 2.).tan();
-        let r = u * self.aspect;
+    pub fn perspective_transform(&self) -> Matrix4 {
+        let fy = 1. / (self.fov_y / 2.).tan();
+        let fx = fy / self.aspect;
         Matrix4 {
             v: [
-                [zmin / r, 0., 0., 0.],
-                [0., zmin / u, 0., 0.],
+                [fx, 0., 0., 0.],
+                [0., fy, 0., 0.],
                 [
                     0.,
                     0.,
-                    (zmax + zmin) / (zmax - zmin),
-                    -2. * zmax * zmin / (zmax - zmin),
+                    (-ZNR - ZFR) / (ZFR - ZNR),
+                    -2. * ZFR * ZNR / (ZFR - ZNR),
                 ],
-                [0., 0., 1., 0.],
-            ],
-        }
-    }
-    pub fn viewport_transform(&self, width: f32, height: f32) -> Matrix4 {
-        Matrix4 {
-            v: [
-                [width / 2., 0., 0., width / 2.],
-                [0., height / 2., 0., height / 2.],
-                [0., 0., 1., 0.],
-                [0., 0., 0., 1.],
+                [0., 0., -1., 0.],
             ],
         }
     }

@@ -1,6 +1,6 @@
 use crate::linalg::Vector2;
 
-pub const EPS: f32 = 1e-5;
+pub const EPS: f32 = 1e-4;
 
 pub fn filter(p: Vector2, v: f32) -> (Vector2, f32, f32, f32, f32) {
     let p1 = Vector2::new(p.v[0].floor(), p.v[1].floor());

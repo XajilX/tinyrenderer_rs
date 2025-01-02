@@ -42,6 +42,9 @@ impl Model {
         for line in reader.lines() {
             let tl = line?;
             let strs = tl.split_whitespace().collect::<Vec<&str>>();
+            if strs.is_empty() {
+                continue;
+            }
             match strs[0] {
                 "v" => {
                     let (x, y, z): (f32, f32, f32) =
@@ -66,7 +69,7 @@ impl Model {
                 "vn" => {
                     let (x, y, z): (f32, f32, f32) =
                         (strs[1].parse()?, strs[2].parse()?, strs[3].parse()?);
-                    ret.vertices.push(Vector3::new(x, y, z));
+                    ret.norms.push(Vector3::new(x, y, z));
                 }
                 "f" => {
                     let mut tris = [(0usize, 0usize, 0usize); 3];
@@ -76,6 +79,7 @@ impl Model {
                         tris[i].1 = inds[1].parse::<usize>().map_or(usize::MAX, |u| u - 1);
                         tris[i].2 = inds[2].parse::<usize>().map_or(usize::MAX, |u| u - 1);
                     }
+                    ret.tris.push((tris[0], tris[1], tris[2]));
                 }
                 _ => {}
             }
