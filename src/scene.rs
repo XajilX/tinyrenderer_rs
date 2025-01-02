@@ -1,5 +1,6 @@
 use crate::{
     camera::Camera,
+    light::{Light, BP_P},
     linalg::{Matrix4, Vector2, Vector3},
     model::Model,
     texture,
@@ -10,6 +11,7 @@ use std::f32::consts::PI;
 pub struct Scene {
     camera: Camera,
     models: Vec<Model>,
+    lights: Vec<Light>,
 }
 
 impl Scene {
@@ -23,6 +25,7 @@ impl Scene {
                 1.,
             ),
             models: vec![],
+            lights: vec![],
         }
     }
     pub fn set_camera(&mut self, camera: Camera) {
@@ -30,6 +33,9 @@ impl Scene {
     }
     pub fn add_model(&mut self, model: Model) {
         self.models.push(model);
+    }
+    pub fn add_light(&mut self, light: Light) {
+        self.lights.push(light);
     }
     pub fn rasterize(&self, width: usize, height: usize, msaa: usize) -> Vec<u8> {
         assert!(msaa <= 16);
@@ -114,10 +120,40 @@ impl Scene {
                                     Vector3::new(uc[0] as f32, uc[1] as f32, uc[2] as f32)
                                 } else {
                                     Vector3::new(255., 255., 255.)
-                                };
+                                } / 255.;
+
+                                //  Blinn-Phong shading
+                                let mut liv = Vector3::new(0., 0., 0.);
+                                let ambient = Vector3::new(0.03, 0.03, 0.03);
+                                for light in &self.lights {
+                                    match light {
+                                        &Light::Point { pos: lp, li } => {
+                                            let dist = (lp - pos).norm();
+                                            let id2 = 1. / (dist * dist);
+                                            let l = (lp - pos).normalize();
+                                            let v = (self.camera.pos - pos).normalize();
+                                            let h = (l + v).normalize();
+                                            let diff = clr * (li * id2) * norm.dot(l).max(0.);
+                                            let spec = Vector3::new(1., 1., 1.)
+                                                * (li * id2)
+                                                * norm.dot(h).max(0.).powf(BP_P);
+                                            liv += ambient + diff + spec;
+                                        }
+                                        &Light::Parallel { dir: ld, li } => {
+                                            let l = ld.normalize();
+                                            let v = (self.camera.pos - pos).normalize();
+                                            let h = (l + v).normalize();
+                                            let diff = clr * li * norm.dot(l).max(0.);
+                                            let spec = Vector3::new(1., 1., 1.)
+                                                * li
+                                                * norm.dot(h).max(0.).powf(BP_P);
+                                            liv += ambient + diff + spec;
+                                        }
+                                    }
+                                }
 
                                 for m in 0..3 {
-                                    fb[buf_idx * 3 + m] = clr.v[m].max(0.).min(255.) as u8;
+                                    fb[buf_idx * 3 + m] = (liv.v[m].max(0.).min(1.) * 255.) as u8;
                                 }
                             }
                         }

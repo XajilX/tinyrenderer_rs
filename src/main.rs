@@ -1,4 +1,5 @@
 mod camera;
+mod light;
 mod linalg;
 mod model;
 mod scene;
@@ -8,6 +9,7 @@ mod utils;
 
 use camera::Camera;
 use image::RgbImage;
+use light::Light;
 use linalg::{Vector2, Vector3};
 use model::Model;
 use scene::Scene;
@@ -30,6 +32,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut model = Model::open("test/spot_triangulated_good.obj")?;
     model.load_texture("test/spot_texture.png")?;
     scene.add_model(model);
+    let light1 = Light::Point {
+        pos: Vector3 { v: [0., 20., 0.] },
+        li: Vector3 {
+            v: [100., 100., 100.],
+        },
+    };
+    let light2 = Light::Parallel {
+        dir: Vector3 { v: [1., 0., 0.] },
+        li: Vector3 { v: [0.8, 0.8, 0.8] },
+    };
+    scene.add_light(light1);
+    scene.add_light(light2);
     let buf = scene.rasterize(WIDTH, HEIGHT, 1);
     let img = RgbImage::from_raw(WIDTH as u32, HEIGHT as u32, buf).unwrap();
     img.save("test/test.png").unwrap();
