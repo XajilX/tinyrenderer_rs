@@ -1,7 +1,8 @@
 use crate::{
-    linalg::{Vector2, Vector3},
+    linalg::{Matrix4, Vector2, Vector3},
     texture::Texture,
     triangle::Triangle,
+    vect,
 };
 use std::{
     error::Error,
@@ -95,12 +96,17 @@ impl Model {
         Ok(())
     }
 
-    pub fn iter(&self) -> IterModel {
-        IterModel { i: 0, model: self }
+    pub fn apply(&mut self, mat: Matrix4) {
+        for p in &mut self.vertices {
+            *p = (mat * p.homo_point()).vec3_homo();
+        }
+        for v in &mut self.norms {
+            *v = (mat * v.homo_vec()).vec3_homo();
+        }
     }
 
-    pub fn len_tri(&self) -> usize {
-        self.tris.len()
+    pub fn iter(&self) -> IterModel {
+        IterModel { i: 0, model: self }
     }
 
     pub fn get_tri(&self, i: usize) -> Triangle {

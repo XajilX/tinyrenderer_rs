@@ -3,8 +3,7 @@ use crate::{
     light::{Light, BP_P},
     linalg::{Matrix4, Vector2, Vector3},
     model::Model,
-    texture,
-    utils::EPS,
+    utils::{barycentric_2d, EPS},
 };
 use std::f32::consts::PI;
 
@@ -83,21 +82,17 @@ impl Scene {
                                 let buf_idx = (xpx + (height - ypx - 1) * width) * msaa * msaa
                                     + ky * msaa
                                     + kx;
-                                let (pf0, pf1, pf2) = (
+                                let trif = [
                                     Vector2::new(pc0.v[0], pc0.v[1]),
                                     Vector2::new(pc1.v[0], pc1.v[1]),
                                     Vector2::new(pc2.v[0], pc2.v[1]),
-                                );
-                                let (l0, l1, l2) = (pf1 - pf0, pf2 - pf1, pf0 - pf2);
-                                let (v1, v2) = (ps - pf1, ps - pf2);
-                                let (af, bf) =
-                                    (l1.cross(v1) / l1.cross(-l0), l2.cross(v2) / l2.cross(-l1));
-
+                                ];
+                                let (af, bf, _) = barycentric_2d(trif, ps);
                                 if af < 0. || bf < 0. || af + bf > 1. {
                                     continue;
                                 }
 
-                                //  perspective correction
+                                //  perspective interpolate correction
                                 let zn =
                                     1. / (af / p0.v[3] + bf / p1.v[3] + (1. - af - bf) / p2.v[3]);
                                 let (a, b, c) = (
@@ -177,7 +172,7 @@ impl Scene {
                     let mut px = [0., 0., 0.];
                     for k in 0..msaa {
                         for l in 0..msaa {
-                            let idx = (i * msaa + k) + (j * msaa + l) * width * msaa;
+                            let idx = (j * width + i) * msaa * msaa + l * msaa + k;
                             for m in 0..3 {
                                 px[m] += fb[idx * 3 + m] as f32;
                             }

@@ -10,70 +10,44 @@ mod utils;
 use camera::Camera;
 use image::RgbImage;
 use light::Light;
-use linalg::{Vector2, Vector3};
+use linalg::transform::Transform;
 use model::Model;
 use scene::Scene;
 use std::{error::Error, f32::consts::PI};
-use utils::filter;
 
-const WIDTH: usize = 1000;
-const HEIGHT: usize = 1000;
+const WIDTH: usize = 1024;
+const HEIGHT: usize = 1024;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut scene = Scene::new();
     let camera = Camera::new(
-        Vector3::new(-2., 0.5, -2.),
-        Vector3::new(1., 0., 1.),
-        Vector3::new(0., 1., 0.),
+        vect![-1., 0.5, -1.],
+        vect![1., 0., 1.],
+        vect![0., 1., 0.],
         90. * PI / 180.,
         1.,
     );
     scene.set_camera(camera);
     let mut model = Model::open("test/spot_triangulated_good.obj")?;
+    let mat = Transform::new()
+        .translation(vect![0.5, 0., 0.5])
+        .rotation(vect![0., 1., 0.], PI / 4.)
+        .mat();
+    model.apply(mat);
     model.load_texture("test/spot_texture.png")?;
     scene.add_model(model);
     let light1 = Light::Point {
-        pos: Vector3 { v: [0., 20., 0.] },
-        li: Vector3 {
-            v: [100., 100., 100.],
-        },
+        pos: vect![0., 3., 0.],
+        li: vect![10., 10., 10.],
     };
     let light2 = Light::Parallel {
-        dir: Vector3 { v: [1., 0., 0.] },
-        li: Vector3 { v: [0.8, 0.8, 0.8] },
+        dir: vect![1., 0., 0.],
+        li: vect![0.8, 0.8, 0.8],
     };
     scene.add_light(light1);
     scene.add_light(light2);
-    let buf = scene.rasterize(WIDTH, HEIGHT, 1);
+    let buf = scene.rasterize(WIDTH, HEIGHT, 4);
     let img = RgbImage::from_raw(WIDTH as u32, HEIGHT as u32, buf).unwrap();
     img.save("test/test.png").unwrap();
     Ok(())
-}
-
-#[allow(dead_code)]
-fn draw_line(img: &mut Vec<u8>, p1: Vector2, p2: Vector2, color: [u8; 3]) {
-    let mut dir = p2 - p1;
-    let step = dir.v[0].abs().max(dir.v[1].abs());
-    dir *= 1. / step;
-    let mut p = p1;
-    let mut i = 0.;
-    while i < step {
-        for ch in 0..3 {
-            let (p1, v1, v2, v3, v4) = filter(p, color[ch] as f32);
-            let (x1, y1) = (p1.v[0] as usize, p1.v[1] as usize);
-            let pb = (HEIGHT - y1 - 1) * WIDTH * 3 + x1 * 3 + ch;
-            img[pb] = img[pb].saturating_add(v1 as u8);
-            if x1 < WIDTH - 1 {
-                img[pb + 3] = img[pb + 3].saturating_add(v2 as u8);
-                if y1 < HEIGHT - 1 {
-                    img[pb + 3 - 3 * WIDTH] = img[pb + 3 - WIDTH].saturating_add(v4 as u8);
-                }
-            }
-            if y1 < HEIGHT - 1 {
-                img[pb - 3 * WIDTH] = img[pb - 3 * WIDTH].saturating_add(v3 as u8);
-            }
-        }
-        p += dir;
-        i += 1.;
-    }
 }
